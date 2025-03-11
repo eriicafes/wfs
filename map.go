@@ -16,6 +16,7 @@ import (
 // mapFs mirrors os filesystem using [fstest.MapFS] and a [bytes.Reader].
 type mapFs struct{ fstest.MapFS }
 
+// Map returns a writeable file system from an existing [fstest.MapFS].
 func Map(fs fstest.MapFS) FS {
 	return &mapFs{fs}
 }
@@ -58,14 +59,6 @@ func (f *mapFs) OpenFile(name string, flag int, perm fs.FileMode) (File, error) 
 		mfile.Seek(0, io.SeekEnd)
 	}
 	return mfile, nil
-}
-
-func (f *mapFs) Stat(name string) (fs.FileInfo, error) {
-	file, err := f.Open(name)
-	if err != nil {
-		return nil, &os.PathError{Op: "stat", Path: name, Err: err}
-	}
-	return file.Stat()
 }
 
 func (f *mapFs) Rename(oldpath, newpath string) error {

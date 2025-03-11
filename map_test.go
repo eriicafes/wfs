@@ -201,69 +201,6 @@ func TestFileName(t *testing.T) {
 	}
 }
 
-func TestFileStat(t *testing.T) {
-	for _, tt := range fileSystems {
-		t.Run(tt.name, func(t *testing.T) {
-			fsys, base, cleanup, err := tt.fsys(fstest.MapFS{
-				"testfile": &fstest.MapFile{},
-				"testdir":  &fstest.MapFile{Mode: fs.ModeDir | 0755},
-			})
-			if err != nil {
-				t.Fatalf("failed to create file system: %v", err)
-			}
-			defer cleanup()
-
-			filePath := filepath.Join(base, "testfile")
-			f, err := fsys.OpenFile(filePath, os.O_RDONLY, 0)
-			if err != nil {
-				t.Fatalf("failed to open file: %v", err)
-			}
-			defer f.Close()
-
-			if info, err := f.Stat(); err != nil || info.IsDir() {
-				t.Errorf("Stat failed: %v, expected file", err)
-			}
-
-			dirPath := filepath.Join(base, "testdir")
-			f, err = fsys.OpenFile(dirPath, os.O_RDONLY, 0)
-			if err != nil {
-				t.Fatalf("failed to open file: %v", err)
-			}
-			defer f.Close()
-
-			if info, err := f.Stat(); err != nil || !info.IsDir() {
-				t.Errorf("Stat failed: %v, expected dir", err)
-			}
-		})
-	}
-}
-
-func TestStat(t *testing.T) {
-	for _, tt := range fileSystems {
-		t.Run(tt.name, func(t *testing.T) {
-			fsys, base, cleanup, err := tt.fsys(fstest.MapFS{
-				"testfile": &fstest.MapFile{},
-				"testdir":  &fstest.MapFile{Mode: fs.ModeDir | 0755},
-			})
-			if err != nil {
-				t.Fatalf("failed to create file system: %v", err)
-			}
-			defer cleanup()
-
-			filePath := filepath.Join(base, "testfile")
-			if info, err := fsys.Stat(filePath); err != nil || info.IsDir() {
-				t.Errorf("Stat failed: %v, expected file", err)
-			}
-
-			dirPath := filepath.Join(base, "testdir")
-			if info, err := fsys.Stat(dirPath); err != nil || !info.IsDir() {
-				t.Errorf("Stat failed: %v, expected dir", err)
-			}
-
-		})
-	}
-}
-
 func TestOpenFile(t *testing.T) {
 	for _, tt := range fileSystems {
 		t.Run(tt.name, func(t *testing.T) {
@@ -372,10 +309,10 @@ func TestRename(t *testing.T) {
 			if err := fsys.Rename(oldPath, newPath); err != nil {
 				t.Fatalf("Rename failed: %v", err)
 			}
-			if _, err := fsys.Stat(newPath); err != nil {
+			if _, err := fs.Stat(fsys, newPath); err != nil {
 				t.Errorf("Renamed file should exist: %v", err)
 			}
-			if _, err := fsys.Stat(oldPath); err == nil {
+			if _, err := fs.Stat(fsys, oldPath); err == nil {
 				t.Errorf("Original file should no longer exist")
 			}
 
@@ -385,18 +322,18 @@ func TestRename(t *testing.T) {
 			if err := fsys.Rename(oldPath, newPath); err != nil {
 				t.Fatalf("Rename failed: %v", err)
 			}
-			if _, err := fsys.Stat(newPath); err != nil {
+			if _, err := fs.Stat(fsys, newPath); err != nil {
 				t.Errorf("Renamed dir should exist: %v", err)
 			}
 			newFilePath := filepath.Join(newPath, "file")
-			if _, err := fsys.Stat(newFilePath); err != nil {
+			if _, err := fs.Stat(fsys, newFilePath); err != nil {
 				t.Errorf("Renamed dir file should exist: %v", err)
 			}
-			if _, err := fsys.Stat(oldPath); err == nil {
+			if _, err := fs.Stat(fsys, oldPath); err == nil {
 				t.Errorf("Original dir should no longer exist")
 			}
 			oldFilePath := filepath.Join(oldPath, "file")
-			if _, err := fsys.Stat(oldFilePath); err == nil {
+			if _, err := fs.Stat(fsys, oldFilePath); err == nil {
 				t.Errorf("Original dir file should no longer exist")
 			}
 		})
@@ -423,7 +360,7 @@ func TestRemove(t *testing.T) {
 			if err := fsys.Remove(filePath); err != nil {
 				t.Fatalf("Remove should succeed for file: %v", err)
 			}
-			if _, err := fsys.Stat(filePath); err == nil {
+			if _, err := fs.Stat(fsys, filePath); err == nil {
 				t.Errorf("Removed file should no longer exist")
 			}
 
@@ -432,7 +369,7 @@ func TestRemove(t *testing.T) {
 			if err := fsys.Remove(dirPath); err == nil {
 				t.Errorf("Remove should fail for non-empty directory")
 			}
-			if _, err := fsys.Stat(dirPath); err != nil {
+			if _, err := fs.Stat(fsys, dirPath); err != nil {
 				t.Errorf("Non-empty directory should still exist")
 			}
 
@@ -441,7 +378,7 @@ func TestRemove(t *testing.T) {
 			if err := fsys.Remove(emptyDirPath); err != nil {
 				t.Fatalf("Remove should succeed for empty directory: %v", err)
 			}
-			if _, err := fsys.Stat(emptyDirPath); err == nil {
+			if _, err := fs.Stat(fsys, emptyDirPath); err == nil {
 				t.Errorf("Removed empty directory should no longer exist")
 			}
 		})
@@ -464,20 +401,20 @@ func TestRemoveAll(t *testing.T) {
 			if err := fsys.RemoveAll(dirPath); err != nil {
 				t.Fatalf("RemoveAll failed: %v", err)
 			}
-			if _, err := fsys.Stat(dirPath); err == nil {
+			if _, err := fs.Stat(fsys, dirPath); err == nil {
 				t.Errorf("Stat should fail for removed directory")
 			}
 
 			nestedFilePath := filepath.Join(dirPath, "file")
-			if _, err := fsys.Stat(nestedFilePath); err == nil {
+			if _, err := fs.Stat(fsys, nestedFilePath); err == nil {
 				t.Errorf("Stat should fail for removed nested file")
 			}
 			nestedDirPath := filepath.Join(dirPath, "nested")
-			if _, err := fsys.Stat(nestedDirPath); err == nil {
+			if _, err := fs.Stat(fsys, nestedDirPath); err == nil {
 				t.Errorf("Stat should fail for removed nested directory")
 			}
 			nestedDirFilePath := filepath.Join(dirPath, "nested", "file")
-			if _, err := fsys.Stat(nestedDirFilePath); err == nil {
+			if _, err := fs.Stat(fsys, nestedDirFilePath); err == nil {
 				t.Errorf("Stat should fail for removed nested directory file")
 			}
 		})
@@ -498,7 +435,7 @@ func TestMkdir(t *testing.T) {
 				t.Fatalf("Mkdir failed: %v", err)
 			}
 
-			if _, err := fsys.Stat(dirPath); err != nil {
+			if _, err := fs.Stat(fsys, dirPath); err != nil {
 				t.Errorf("Stat failed for created directory: %v", err)
 			}
 
@@ -524,7 +461,7 @@ func TestMkdirAll(t *testing.T) {
 				t.Fatalf("MkdirAll failed: %v", err)
 			}
 
-			if _, err := fsys.Stat(dirPath); err != nil {
+			if _, err := fs.Stat(fsys, dirPath); err != nil {
 				t.Errorf("Stat failed for created directory structure: %v", err)
 			}
 		})

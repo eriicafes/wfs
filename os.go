@@ -7,6 +7,7 @@ import (
 
 type osFs struct{}
 
+// OS returns a os writable file system.
 func OS() FS {
 	return osFs{}
 }
@@ -19,6 +20,7 @@ func (osFs) OpenFile(name string, flag int, perm fs.FileMode) (File, error) {
 	return os.OpenFile(name, flag, perm)
 }
 
+// Stat implements [fs.StatFS] for osFS.
 func (osFs) Stat(name string) (fs.FileInfo, error) {
 	return os.Stat(name)
 }

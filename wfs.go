@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// File is the minimum implementation of a file in a writable file system.
 type File interface {
 	fs.File
 	io.WriteSeeker
@@ -23,12 +24,19 @@ type File interface {
 	Name() string
 }
 
+// FS provides access to a writable file system.
+//
+// The FS implements [fs.FS] and as well as FileFS and DirFS to provide
+// a file system that can read and write files and directories.
+//
+// [Map] may be used to test implementations of an FS.
 type FS interface {
 	fs.FS
 	FileFS
 	DirFS
 }
 
+// FileFS is the interface required of a file system to handle files.
 type FileFS interface {
 	// OpenFile is the generalized open call; most users will use Open
 	// or Create instead. It opens the named file with specified flag
@@ -38,10 +46,6 @@ type FileFS interface {
 	// methods on the returned File can be used for I/O.
 	// If there is an error, it will be of type [*fs.PathError].
 	OpenFile(name string, flag int, perm fs.FileMode) (File, error)
-
-	// Stat returns a FileInfo describing the file.
-	// If there is an error, it should be of type [*fs.PathError].
-	Stat(name string) (fs.FileInfo, error)
 
 	// Rename renames (moves) oldpath to newpath.
 	// If newpath already exists and is not a directory, Rename replaces it.
@@ -63,6 +67,7 @@ type FileFS interface {
 	RemoveAll(path string) error
 }
 
+// DirFS is the interface required of a file system to handle directories.
 type DirFS interface {
 	// Mkdir creates a new directory with the specified name and permission
 	// bits (before umask).
