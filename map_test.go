@@ -467,3 +467,65 @@ func TestMkdirAll(t *testing.T) {
 		})
 	}
 }
+
+func TestCreate(t *testing.T) {
+	for _, tt := range fileSystems {
+		t.Run(tt.name, func(t *testing.T) {
+			fsys, base, cleanup, err := tt.fsys(fstest.MapFS{})
+			if err != nil {
+				t.Fatalf("failed to create file system: %v", err)
+			}
+			defer cleanup()
+
+			filePath := filepath.Join(base, "testfile")
+			// create file
+			f, err := wfs.Create(fsys, filePath)
+			if err != nil {
+				t.Fatalf("failed to create file: %v", err)
+			}
+			defer f.Close()
+
+			// truncate file
+			f, err = wfs.Create(fsys, filePath)
+			if err != nil {
+				t.Fatalf("failed to create file: %v", err)
+			}
+			defer f.Close()
+		})
+	}
+}
+
+func TestWriteFile(t *testing.T) {
+	for _, tt := range fileSystems {
+		t.Run(tt.name, func(t *testing.T) {
+			fsys, base, cleanup, err := tt.fsys(fstest.MapFS{})
+			if err != nil {
+				t.Fatalf("failed to create file system: %v", err)
+			}
+			defer cleanup()
+
+			filePath := filepath.Join(base, "testfile")
+			// create file
+			data := []byte("Hello")
+			err = wfs.WriteFile(fsys, filePath, data, 0755)
+			if err != nil {
+				t.Fatalf("failed to write file: %v", err)
+			}
+			b, err := fs.ReadFile(fsys, filePath)
+			if err != nil || string(b) != "Hello" {
+				t.Errorf("expected 'Hello', got %q err: %v", b, err)
+			}
+
+			// replace file
+			data = []byte("World")
+			err = wfs.WriteFile(fsys, filePath, data, 0755)
+			if err != nil {
+				t.Fatalf("failed to write file: %v", err)
+			}
+			b, err = fs.ReadFile(fsys, filePath)
+			if err != nil || string(b) != "World" {
+				t.Errorf("expected 'World', got %q err: %v", b, err)
+			}
+		})
+	}
+}
