@@ -27,7 +27,7 @@ type File interface {
 // FS provides access to a writable file system.
 //
 // The FS implements [fs.FS] and as well as FileFS and DirFS to provide
-// a file system that can read and write files and directories.
+// a file system that can create, read, write and delete files and directories.
 //
 // [Map] may be used to test implementations of an FS.
 type FS interface {
