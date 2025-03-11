@@ -141,12 +141,14 @@ func (f *mapFs) RemoveAll(path string) error {
 
 func (f *mapFs) Mkdir(name string, perm fs.FileMode) error {
 	dir, _ := path.Split(name)
-	info, err := f.Stat(dir)
-	if err != nil {
-		return &os.PathError{Op: "mkdir", Path: name, Err: syscall.ENOENT}
-	}
-	if !info.IsDir() {
-		return &os.PathError{Op: "mkdir", Path: name, Err: syscall.ENOTDIR}
+	if dir != "" {
+		info, err := f.Stat(dir)
+		if err != nil {
+			return &os.PathError{Op: "mkdir", Path: name, Err: syscall.ENOENT}
+		}
+		if !info.IsDir() {
+			return &os.PathError{Op: "mkdir", Path: name, Err: syscall.ENOTDIR}
+		}
 	}
 	f.MapFS[name] = &fstest.MapFile{
 		Mode:    perm,
