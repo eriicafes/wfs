@@ -33,7 +33,7 @@ fsys := wfs.Map(fstest.MapFS{})
 ### FS
 
 A `wfs.FS` implements `fs.FS`, `wfs.FileFS` and `wfs.DirFS`.
-A `wfs.FS` implementation can read, write and create files and directories.
+A `wfs.FS` implementation can read, write, create and delete files and directories.
 
 ```go
 type FS interface {
